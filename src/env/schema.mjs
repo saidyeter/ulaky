@@ -18,7 +18,7 @@ export const serverSchema = z.object({
     // VERCEL_URL doesn't include `https` so it cant be validated as a URL
     process.env.VERCEL ? z.string() : z.string().url(),
   ),
-  MONGO:z.string()
+  MONGODB_URI:z.string()
 });
 
 /**
@@ -30,7 +30,7 @@ export const serverEnv = {
   NODE_ENV: process.env.NODE_ENV,
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-  MONGO : process.env.MONGO,
+  MONGODB_URI : process.env.MONGODB_URI,
 };
 
 /**

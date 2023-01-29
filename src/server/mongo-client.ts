@@ -5,10 +5,10 @@ import { serverEnv } from '../env/schema.mjs';
 let db: Db
 export async function getCollection(collectionName: "user" | "message" | 'photo') {
     if (!db) {
-        if (!serverEnv.MONGO) {
+        if (!serverEnv.MONGODB_URI) {
             throw new Error("db connection error");
         }
-        const url = serverEnv.MONGO;
+        const url = serverEnv.MONGODB_URI;
         const client = new MongoClient(url);
         const connection = await client.connect()
         db = connection.db('test');
