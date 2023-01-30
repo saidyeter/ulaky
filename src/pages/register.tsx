@@ -1,14 +1,11 @@
 import { type NextPage } from "next";
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import Head from "next/head";
-import Link from "next/link";
-import { useRouter } from "next/router";
-import { use, useState } from "react";
+import { useState } from "react";
 
 import { api } from "../utils/api";
 
 const Register: NextPage = () => {
-
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -17,7 +14,6 @@ const Register: NextPage = () => {
 
   const register = api.user.register.useMutation();
   function handleRegister() {
-    console.log("register", email, name, password);
     register.mutate(
       {
         email,
@@ -25,8 +21,7 @@ const Register: NextPage = () => {
         password,
       },
       {
-        onSuccess(data, variables, context) {
-          console.log(data, variables, context);
+        onSuccess(data) {
           if (data.success) {
             signIn("credentials", {
               callbackUrl: "/",
@@ -35,7 +30,7 @@ const Register: NextPage = () => {
             setRegisterError(data.msg ?? "");
           }
         },
-        onError(error, variables, context) {
+        onError(error) {
           setRegisterError(error.message ?? "");
         },
       }

@@ -1,8 +1,7 @@
-import { Hash } from "crypto";
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 import { getCollection } from "../../mongo-client";
-
+import crypto from "crypto";
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
 
 export const userRouter = createTRPCRouter({
@@ -25,11 +24,8 @@ export const userRouter = createTRPCRouter({
           msg: 'the username has been taken'
         };
       }
-      const crypto = require('crypto')
 
-      let emailHash = crypto.createHash('md5').update(input.email).digest("hex")
-      console.log('emailHash', emailHash);
-
+      const emailHash = crypto.createHash('md5').update(input.email).digest("hex")
       const avatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=256`
       const avatar = await (await fetch(avatarUrl)).arrayBuffer()
       const avatarBase64 = btoa(
@@ -127,12 +123,3 @@ export const userRouter = createTRPCRouter({
       };
     }),
 });
-
-function _arrayBufferToBase64(buffer: ArrayBuffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  for (var i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i] ?? -1);
-  }
-  return btoa(binary);
-}

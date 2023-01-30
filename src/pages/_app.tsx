@@ -1,12 +1,13 @@
 import { type AppType } from "next/app";
 import { type Session } from "next-auth";
 import { SessionProvider, signIn, signOut, useSession } from "next-auth/react";
-
+import Image from "next/image";
 import { api } from "../utils/api";
 
 import "../styles/globals.css";
 import Head from "next/head";
 import { useState } from "react";
+import Link from "next/link";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -19,8 +20,8 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <title>Msg App</title>
           <link rel="icon" href="/favicon.ico" />
         </Head>
+        <main className="flex min-h-screen flex-col items-center justify-start pt-10 bg-[#254B62]">
         <NavHeader />
-        <main className="flex min-h-screen flex-col items-center justify-center bg-[#254B62]">
           <Component {...pageProps} />
         </main>
       </>
@@ -35,7 +36,9 @@ function NavHeader() {
   const { data } = useSession();
 
   return (
-    <header>
+    <header
+    className="w-full fixed top-0"
+    >
       <nav
         className="
         flex w-full
@@ -43,7 +46,6 @@ function NavHeader() {
         items-center
         justify-between
         bg-[#1D3E53]
-        py-4
         px-4
         text-lg 
         text-white
@@ -51,9 +53,9 @@ function NavHeader() {
       "
       >
         <div>
-          <a href="/">
+          <Link href="/">
             <h3>Messaging App</h3>
-          </a>
+          </Link>
         </div>
 
         <svg
@@ -92,22 +94,24 @@ function NavHeader() {
             {data?.user ? (
               <>
                 <li>
-                  <a className="block py-2 hover:scale-125 md:p-4" href="/chat">
+                  <Link
+                    href="/chat"
+                    className="block py-2 hover:scale-125 md:p-4"
+                  >
                     chat
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    className="block py-2 hover:scale-125 md:p-4"
+                  <Link
                     href="/profile"
+                    className="block py-2 hover:scale-125 md:p-4"
                   >
                     profile
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
+                  <button
                     className="block py-2 hover:scale-125 md:p-4"
-                    href="#"
                     onClick={() =>
                       signOut({
                         callbackUrl: "/",
@@ -115,34 +119,37 @@ function NavHeader() {
                     }
                   >
                     {data.user.name} -&gt;
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <img
-                    className="w-8 rounded-full"
-                    src={data.user.image ?? ""}
-                    alt="log"
-                  />
+                  {data.user.image && (
+                    <Image
+                      className="rounded-full"
+                      width={32}
+                      height={32}
+                      src={data.user.image}
+                      alt="log"
+                    />
+                  )}
                 </li>
               </>
             ) : (
               <>
                 <li>
-                  <a
+                  <button
                     className="block py-2 hover:scale-125 md:p-4"
-                    href="#"
                     onClick={() => signIn()}
                   >
                     login
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a
+                  <Link
+                    href="/register"
                     className="block py-2 hover:scale-125 md:p-4"
-                    href="register"
                   >
-                    signup
-                  </a>
+                    register
+                  </Link>
                 </li>
               </>
             )}
