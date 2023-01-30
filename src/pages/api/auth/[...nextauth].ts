@@ -1,3 +1,4 @@
+import { type ObjectID } from "bson";
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialProvider from "next-auth/providers/credentials";
 import { z } from "zod";
@@ -27,7 +28,7 @@ export const authOptions: NextAuthOptions = {
         username: { label: "Username", type: "text", placeholder: "jsmith" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
 
         const loginObj = z.object({
           username: z.string().email(),
@@ -42,7 +43,12 @@ export const authOptions: NextAuthOptions = {
         const { username, password } = parseRes.data
 
         const userCollection = await getCollection("user")
-        const user = await userCollection.findOne({
+        const user = await userCollection.findOne<{
+          _id: ObjectID,
+          email:string,
+          name: string,
+          image?: string
+        }>({
           email:username,
           password,
         });

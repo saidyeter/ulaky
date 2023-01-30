@@ -1,12 +1,11 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { api } from "../utils/api";
 
 const Profile: NextPage = () => {
-  const [file, setFile] = useState<any>(null);
+  const [file, setFile] = useState<File | undefined>(undefined);
   const [changePictureRes, setChangePictureRes] = useState("");
 
   const [oldPassword, setOldPassword] = useState("");
@@ -15,7 +14,7 @@ const Profile: NextPage = () => {
   const [changePasswordRes, setChangePasswordRes] = useState("");
 
   function onFileChange(e: FormEvent<HTMLInputElement>) {
-    setFile(e.currentTarget.files?.[0]);
+    setFile(e.currentTarget.files?.[0] as File);
   }
   const changeProfilePicture = api.user.changeProfilePicture.useMutation();
 
@@ -24,11 +23,13 @@ const Profile: NextPage = () => {
       setChangePictureRes("select an image");
       return;
     }
-    if (file.size > 100_000) { // 100 kb is limit
+    if (file.size > 100_000) {
+      // 100 kb is limit
       setChangePictureRes("image is big");
       return;
     }
-    if (!file.type.startsWith('image')) { // must be image
+    if (!file.type.startsWith("image")) {
+      // must be image
       setChangePictureRes("select an image, like jpg or png");
       return;
     }
@@ -53,15 +54,15 @@ const Profile: NextPage = () => {
         pictureBase64: b64,
       },
       {
-        onSuccess(data, variables, context) {
+        onSuccess(data) {
           if (data.success) {
             setChangePictureRes("successful");
-            setFile(null);
+            setFile(undefined);
           } else {
             setChangePictureRes(data.msg ?? "");
           }
         },
-        onError(error, variables, context) {
+        onError(error) {
           setChangePictureRes(error.message ?? "");
         },
       }
@@ -78,7 +79,7 @@ const Profile: NextPage = () => {
         newPasswordAgain,
       },
       {
-        onSuccess(data, variables, context) {
+        onSuccess(data) {
           if (data.success) {
             setChangePasswordRes("successful");
             setOldPassword("");
@@ -88,7 +89,7 @@ const Profile: NextPage = () => {
             setChangePasswordRes(data.msg ?? "");
           }
         },
-        onError(error, variables, context) {
+        onError(error) {
           setChangePasswordRes(error.message ?? "");
         },
       }
@@ -100,7 +101,7 @@ const Profile: NextPage = () => {
         <title>Profile</title>
       </Head>
 
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
+      <div className="container flex flex-col items-center justify-center gap-4">
         <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-[3rem]">
           profile settings
         </h2>
@@ -111,7 +112,15 @@ const Profile: NextPage = () => {
           accept="image/png, image/jpeg"
         />
         <p>{changePictureRes}</p>
-        <button onClick={uploadImage}>upload</button>
+        <button
+          onClick={() =>
+            uploadImage().catch((e) => {
+              console.log("couldnt upload image", e);
+            })
+          }
+        >
+          upload
+        </button>
 
         <input
           placeholder=" password"
