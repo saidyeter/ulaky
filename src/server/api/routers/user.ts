@@ -10,20 +10,35 @@ export const userRouter = createTRPCRouter({
     .input(z.object({
       email: z.string().email(),
       password: z.string().min(2),
-      name: z.string().min(2)
+      displayname: z.string().min(2),
+      username: z.string().min(4)
     }))
-    .mutation(async ({ input }) => {
-      const userCollection = await getCollection('user')
-      const user = await userCollection.findOne({
-        email: input.email,
-        password: input.password
-      });
-      if (user) {
+    .mutation(async ({ input, ctx }) => {
+      const db = ctx.prisma
+      const existingUser = await db.accounts.findFirst({
+        where: {
+          email: input.email,
+          password: input.password
+        }
+      })
+      if (existingUser) {
         return {
           success: false,
           msg: 'the username has been taken'
         };
       }
+
+      // const userCollection = await getCollection('user')
+      // const user = await userCollection.findOne({
+      //   email: input.email,
+      //   password: input.password
+      // });
+      // if (user) {
+      //   return {
+      //     success: false,
+      //     msg: 'the username has been taken'
+      //   };
+      // }
 
       const emailHash = crypto.createHash('md5').update(input.email).digest("hex")
       const avatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=256`
@@ -33,21 +48,41 @@ export const userRouter = createTRPCRouter({
           .reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
 
+      console.log(avatarBase64.length);
+      
+      // const insertPhoto = await db.images.create({
+      //   data: {
+      //     data: avatarBase64
+      //   }
+      // })
       const photoCollection = await getCollection('photo')
       const uploadPhoto = await photoCollection.insertOne({
         data: avatarBase64
       });
+      const insertAccount = await db.accounts.create({
+        data: {
+          email : input.email,
+          display_name :  input.displayname,
+          image_id : uploadPhoto.insertedId.toString(),
+          password : input.password,
+          created_at : new Date().toISOString(),
+          last_login: new Date().toISOString(),
+          salt : 'asfd',
+          suspended :false,
+          verified: true,
+          username : input.username,
+        }
+      })
 
-      const result = await userCollection.insertOne({
-        email: input.email,
-        name: input.name,
-        password: input.password,
-        image: uploadPhoto.insertedId.toString(),
-        suspended: false
-      });
+      // const result = await userCollection.insertOne({
+      //   email: input.email,
+      //   name: input.name,
+      //   password: input.password,
+      //   image: uploadPhoto.insertedId.toString(),
+      //   suspended: false
+      // });
       return {
         success: true,
-        user: result
       };
     }),
 

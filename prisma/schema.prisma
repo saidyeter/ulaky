@@ -1,0 +1,61 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model Accounts {
+    id           Int      @id @default(autoincrement())
+    email        String   @unique
+    username     String   @unique
+    display_name String
+    password     String
+    salt         String
+    created_at   String
+    verified     Boolean
+    last_login   DateTime
+    suspended    Boolean
+    image_id     String
+
+    @@map(name: "accounts")
+}
+
+model Chats {
+    id           Int      @id @default(autoincrement())
+    chat_id      String
+    account_id   Int
+    last_message DateTime
+
+    @@map(name: "chats")
+}
+
+// model ChatProps {
+//     id           Int    @id @default(autoincrement())
+//     participants String
+//     publickey    String
+//     privatekey   String
+
+//     @@map(name: "chats")
+// }
+
+model Messages {
+    id      Int      @id @default(autoincrement())
+    chatid  String
+    text    String
+    sender  Int
+    sent_at DateTime
+
+    @@map(name: "messages")
+}
+
+model MessageReads {
+    id         Int      @id @default(autoincrement())
+    message_id Int
+    account_id Int
+    read_at    DateTime
+
+    @@map(name: "message_reads")
+}
