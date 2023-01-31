@@ -7,7 +7,8 @@ import { api } from "../utils/api";
 
 const Register: NextPage = () => {
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [displayname, setDisplayname] = useState("");
   const [password, setPassword] = useState("");
 
   const [registerError, setRegisterError] = useState("");
@@ -17,15 +18,14 @@ const Register: NextPage = () => {
     register.mutate(
       {
         email,
-        name,
+        username,
         password,
+        displayname
       },
       {
         onSuccess(data) {
           if (data.success) {
-            signIn("credentials", {
-              callbackUrl: "/",
-            });
+            signIn();
           } else {
             setRegisterError(data.msg ?? "");
           }
@@ -43,9 +43,14 @@ const Register: NextPage = () => {
       </Head>
       <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
         <input
-          placeholder=" name"
+          placeholder=" user name"
           className="text-2xl text-black"
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          placeholder=" display name"
+          className="text-2xl text-black"
+          onChange={(e) => setDisplayname(e.target.value)}
         />
         <input
           placeholder=" email"
