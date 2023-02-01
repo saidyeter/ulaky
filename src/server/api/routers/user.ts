@@ -14,32 +14,39 @@ export const userRouter = createTRPCRouter({
       username: z.string().min(4)
     }))
     .mutation(async ({ input, ctx }) => {
+
       const db = ctx.prisma
-      const existingUser = await db.accounts.findFirst({
-        where: {
-          email: input.email,
-          password: input.password
+      try {
+
+        const existingUser = await db.accounts.findFirst({
+          where: {
+            OR: [
+              {
+                email: {
+                  equals: input.email
+                },
+              },
+              {
+                username: {
+                  equals: input.username
+                },
+              }
+            ]
+          }
+        })
+        if (existingUser) {
+          return {
+            success: false,
+            msg: 'the username has been taken'
+          };
         }
-      })
-      if (existingUser) {
+      } catch (error) {
+        console.log('couldnt check db', error);
         return {
           success: false,
-          msg: 'the username has been taken'
+          msg: 'couldnt check db'
         };
       }
-
-      // const userCollection = await getCollection('user')
-      // const user = await userCollection.findOne({
-      //   email: input.email,
-      //   password: input.password
-      // });
-      // if (user) {
-      //   return {
-      //     success: false,
-      //     msg: 'the username has been taken'
-      //   };
-      // }
-
       const emailHash = crypto.createHash('md5').update(input.email).digest("hex")
       const avatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=256`
       const avatar = await (await fetch(avatarUrl)).arrayBuffer()
@@ -48,39 +55,26 @@ export const userRouter = createTRPCRouter({
           .reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
 
-      console.log(avatarBase64.length);
-      
-      // const insertPhoto = await db.images.create({
-      //   data: {
-      //     data: avatarBase64
-      //   }
-      // })
+
       const photoCollection = await getCollection('photo')
       const uploadPhoto = await photoCollection.insertOne({
         data: avatarBase64
       });
       const insertAccount = await db.accounts.create({
         data: {
-          email : input.email,
-          display_name :  input.displayname,
-          image_id : uploadPhoto.insertedId.toString(),
-          password : input.password,
-          created_at : new Date().toISOString(),
+          email: input.email,
+          display_name: input.displayname,
+          image_id: uploadPhoto.insertedId.toString(),
+          password: input.password,
+          created_at: new Date().toISOString(),
           last_login: new Date().toISOString(),
-          salt : 'asfd',
-          suspended :false,
+          salt: 'asfd',
+          suspended: false,
           verified: true,
-          username : input.username,
+          username: input.username,
         }
       })
 
-      // const result = await userCollection.insertOne({
-      //   email: input.email,
-      //   name: input.name,
-      //   password: input.password,
-      //   image: uploadPhoto.insertedId.toString(),
-      //   suspended: false
-      // });
       return {
         success: true,
       };
