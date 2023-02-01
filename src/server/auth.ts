@@ -41,10 +41,13 @@ declare module "next-auth" {
  **/
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session({ session, user }) {
+    async session({ session, user, token }) {
       if (session.user && user) {
         session.user.id = user.id;
         // session.user.role = user.role; <-- put other properties on the session here
+      }
+      if (session.user && token) {
+        session.user.id = token.sub ?? '';
       }
       return session;
     },
@@ -119,8 +122,6 @@ export const authOptions: NextAuthOptions = {
             name: existingUser.display_name,
             image: existingUser.image_id ? '/api/photo/' + existingUser.image_id : ""
           }
-          console.log(_user);
-
 
           return _user
         }
