@@ -43,7 +43,7 @@ model Chats {
 
 model Messages {
     id      Int      @id @default(autoincrement())
-    chatid  String
+    chat_id Int
     text    String
     sender  Int
     sent_at DateTime
