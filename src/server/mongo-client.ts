@@ -3,7 +3,7 @@ import { serverEnv } from '../env/schema.mjs';
 
 
 let db: Db
-export async function getCollection(collectionName: "user" | "message" | 'photo') {
+export async function getCollection(collectionName: "user" | "message" | 'photo' | "chat") {
     if (!db) {
         if (!serverEnv.MONGODB_URI) {
             throw new Error("db connection error");

@@ -20,8 +20,8 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <title>Msg App</title>
           <link rel="icon" href="/favicon.ico" />
         </Head>
-        <main className="flex min-h-screen flex-col items-center justify-start pt-10 bg-[#254B62]">
-        <NavHeader />
+        <main className="min-h-screen bg-[#254B62]">
+          <NavHeader />
           <Component {...pageProps} />
         </main>
       </>
@@ -36,9 +36,7 @@ function NavHeader() {
   const { data } = useSession();
 
   return (
-    <header
-    className="w-full fixed top-0"
-    >
+    <header>
       <nav
         className="
         flex w-full
