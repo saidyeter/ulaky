@@ -14,32 +14,33 @@ model Accounts {
     display_name String
     password     String
     salt         String
-    created_at   String
-    verified     Boolean
+    created_at   DateTime
+    verified     Boolean  @default(true)
     last_login   DateTime
-    suspended    Boolean
+    suspended    Boolean  @default(false)
     image_id     String
 
     @@map(name: "accounts")
 }
 
 model Chats {
-    id           Int      @id @default(autoincrement())
-    chat_id      String
-    account_id   Int
-    last_message DateTime
+    id              Int     @id @default(autoincrement())
+    chat_keys_id    String
+    last_message_id Int
+    is_group        Boolean @default(false)
+    group_name      String?
+    group_image_id  String?
 
     @@map(name: "chats")
 }
 
-// model ChatProps {
-//     id           Int    @id @default(autoincrement())
-//     participants String
-//     publickey    String
-//     privatekey   String
+model ChatParticipants {
+    id         Int @id @default(autoincrement())
+    chat_id    Int
+    account_id Int
 
-//     @@map(name: "chats")
-// }
+    @@map(name: "chat_participants")
+}
 
 model Messages {
     id      Int      @id @default(autoincrement())
@@ -47,6 +48,7 @@ model Messages {
     text    String
     sender  Int
     sent_at DateTime
+    status  Int      @default(0)
 
     @@map(name: "messages")
 }
@@ -59,3 +61,49 @@ model MessageReads {
 
     @@map(name: "message_reads")
 }
+
+// -- chat list 
+// select
+// c.id as chatId,
+
+// # receiver user display name 
+// (
+//   case c.is_group = 1 then c.group_name
+//   else (select a.display_name from accounts a where a.id = (select cp2.account_id from chat_participants cp2 where cp2.chat_id = c.id where cp2.account_id <> 123 limit 1)
+// ) as receiverDisplayName,
+
+// # receiver username 
+// (
+//   case c.is_group = 1 then c.group_name
+//   else (select a.display_name from accounts a where a.id = (select cp2.account_id from chat_participants cp2 where cp2.chat_id = c.id where cp2.account_id <> 123 limit 1)
+// ) as receiverUserName,
+
+// # receiver user image
+// (
+//   case c.is_group = 1 then c.group_name
+//   else (select a.image_id from accounts a where a.id = (select cp2.account_id from chat_participants cp2 where cp2.chat_id = c.id where cp2.account_id <> 123 limit 1)
+// ) as receiverImageId,
+
+// # last message text
+// (
+//   select m.text from messages m where m.id = c.last_message_id limit 1
+// ) as lastMessageText,
+
+// # last message date
+// (
+//   select m.sent_at from messages m where m.id = c.last_message_id limit 1
+// ) as lastMessageDate,
+
+// # last message sender
+// (
+//   select m.sender from messages m where m.id = c.last_message_id limit 1
+// ) as lastMessageSender,
+
+// # last message seen 
+// (
+//   select m.text from message_reads mr where mr.message_id = c.last_message_id limit 1
+// ) as lastMessageSeen
+
+// from chats c
+// left join chat_participants cp on c.id = cp.chat_id
+// where cp.account_id = 123
