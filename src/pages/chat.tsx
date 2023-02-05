@@ -1,12 +1,19 @@
 import { Accounts } from "@prisma/client";
 import { type NextPage } from "next";
 import Head from "next/head";
-import { useState } from "react";
+import { createContext, useState, useContext, useMemo } from "react";
 import { api } from "../utils/api";
 
+const ChatIdContext = createContext(
+  {} as [number, React.Dispatch<React.SetStateAction<number>>]
+);
+//  const [chatId, setChatId]  = useContext(ChatContext);
+
 const Chat: NextPage = () => {
+  const chatIdState = useState(0);
+
   return (
-    <>
+    <ChatIdContext.Provider value={chatIdState}>
       <Head>
         <title>Chat</title>
       </Head>
@@ -20,13 +27,16 @@ const Chat: NextPage = () => {
           <ChatBox />
         </div>
       </div>
-    </>
+    </ChatIdContext.Provider>
   );
 };
 
 export default Chat;
 
 function ChatList() {
+  const [_, setChatId] = useContext(ChatIdContext);
+
+  const [receiver, setReceiver] = useState(0);
   const [searching, setSearching] = useState(false);
   const chats = api.message.getChats.useQuery(
     {},
@@ -36,7 +46,6 @@ function ChatList() {
   );
   const [searchKey, setSearchKey] = useState("");
   const [foundUsers, setFoundUsers] = useState<Accounts[]>([]);
-  const [receiver, setReceiver] = useState(0);
 
   const searchUser = api.message.searchUser.useQuery(
     {
@@ -78,8 +87,9 @@ function ChatList() {
 
       {!searching ? (
         chats.data?.success &&
+        Array.isArray(chats.data.chats) &&
         chats.data.chats.map((val, i) => {
-          return <div key={i}>{val.chat_id}</div>;
+          return <div key={i}>{val.chat_keys_id}</div>;
         })
       ) : (
         <div>
@@ -103,17 +113,29 @@ function ChatList() {
 }
 
 function ChatBox() {
-  const [receiver, setReceiver] = useState(0);
+  const [chatId, setChatId] = useContext(ChatIdContext);
   const [message, setMessage] = useState("");
-
+  const chats = api.message.getMessages.useQuery(
+    {
+      chatId: chatId,
+    },
+    {
+      enabled: chatId !== 0,
+    }
+  );
   function sendMessage() {}
-  if (receiver === 0) {
+  if (chatId === 0) {
     return <></>;
   }
 
   return (
     <>
       <div>messages</div>
+      <div>
+        {chats.data?.messages.map((val, i) => {
+          return <div key={i}>{val.chat_id}</div>;
+        })}
+      </div>
       <input onChange={(e) => setMessage(e.target.value)} />
       <button onClick={sendMessage}>send message</button>
     </>
