@@ -25,15 +25,29 @@ export const messageRouter = createTRPCRouter({
   getChats: protectedProcedure
     .input(z.object({}))
     .query(async ({ input, ctx }) => {
+      console.log();
+
+      const chats = await ctx.prisma.$queryRaw`${getChatQuery(ctx.session.user.id)}`
+      return {
+        success: true,
+        chats
+      }
+    }),
+
+  getChatsByUser: protectedProcedure
+    .input(z.object({
+      receiverId: z.number()
+    }))
+    .query(async ({ input, ctx }) => {
       console.log(ctx.session.user.id);
 
       const chats = await ctx.prisma.chats.findMany({
-        where: {
-          account_id: parseInt(ctx.session.user.id)
-        },
-        orderBy: {
-          last_message: 'desc'
-        }
+        // where: {
+        //   account_id: parseInt(ctx.session.user.id)
+        // },
+        // orderBy: {
+        //   last_message: 'desc'
+        // }
       })
       return {
         success: true,
@@ -85,29 +99,29 @@ export const messageRouter = createTRPCRouter({
         }
       }
 
-      const insertSenderChat = db.chats.create({
-        data: {
-          account_id: parseInt(ctx.session.user.id),
-          chat_id: insertMongoResult.insertedId.toString(),
-          last_message: new Date(),
-        }
-      })
+      // const insertSenderChat = db.chats.create({
+      //   data: {
+      //     // sender_id: parseInt(ctx.session.user.id),
+      //     chat_keys_id: insertMongoResult.insertedId.toString(),
+      //     // last_message: new Date(),
+      //   }
+      // })
 
-      const insertReceiverChat = db.chats.create({
-        data: {
-          account_id: receiverUser.id,
-          chat_id: insertMongoResult.insertedId.toString(),
-          last_message: new Date(),
-        }
-      })
+      // const insertReceiverChat = db.chats.create({
+      //   data: {
+      //     // account_id: receiverUser.id,
+      //     chat_keys_id: insertMongoResult.insertedId.toString(),
+      //     last_message: new Date(),
+      //   }
+      // })
 
-      const promises = await Promise.allSettled([insertSenderChat, insertReceiverChat])
-      if (promises[0].status == 'fulfilled' && promises[1].status == 'fulfilled') {
-        return {
-          success: true,
-          chatId: promises[0].value.id
-        }
-      }
+      // const promises = await Promise.allSettled([insertSenderChat, insertReceiverChat])
+      // if (promises[0].status == 'fulfilled' && promises[1].status == 'fulfilled') {
+      //   return {
+      //     success: true,
+      //     chatId: promises[0].value.id
+      //   }
+      // }
       console.log('couldnt insert chat to db')
       return {
         success: false,
@@ -235,6 +249,26 @@ export const messageRouter = createTRPCRouter({
       };
     }),
 
+  getMessages: protectedProcedure
+    .input(z.object({
+      chatId: z.number(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const db = ctx.prisma
+      const messages = await db.messages.findMany({
+        where: {
+          chat_id: input.chatId
+        }
+      })
+      return {
+        success: true,
+        messages
+      }
+
+
+
+    }),
+
   // getFirstUnreadMessage: protectedProcedure
   //   .input(z.object({
   //     chatId: z.number(),
@@ -281,4 +315,52 @@ function createRSAKeys(): string[] {
     publicKeyStr,
     privateKeyStr
   ]
+}
+
+function getChatQuery(accountId:number|string) {
+  return `
+  -- chat list 
+  select
+  c.id as chatId,
+  
+  # receiver user display name 
+  (
+    case 
+      when c.is_group = 1 then c.group_name
+      else a.display_name 
+    end
+  ) as receiverDisplayName,
+    
+  # receiver username 
+  (
+    case 
+      when c.is_group = 1 then c.group_name
+      else a.username
+    end
+  ) as receiverUserName,
+  
+  # receiver user image
+  (
+    case 
+      when c.is_group = 1 then c.group_image_id
+      else a.image_id 
+    end
+  ) as receiverImageId,
+  
+  # last message text
+  m.text as lastMessageText,
+  
+  # last message date
+  m.sent_at as lastMessageDate,
+    
+  # last message sender
+  m.sender as lastMessageSender
+  
+  from chats c
+  inner join chat_participants cp on c.id = cp.chat_id
+  inner join messages m on m.id = c.last_message_id
+  left join chat_participants cp2 on cp2.chat_id = c.id and cp2.account_id <> ${accountId}  and c.is_group=0
+  left join accounts a on a.id = cp2.account_id
+  where cp.account_id = ${accountId};
+`
 }
