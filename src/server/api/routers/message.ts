@@ -25,9 +25,11 @@ export const messageRouter = createTRPCRouter({
   getChats: protectedProcedure
     .input(z.object({}))
     .query(async ({ input, ctx }) => {
-      console.log();
+      const sql = getChatQuery(ctx.session.user.id)
+      // console.log(ctx.session.user.id);
 
-      const chats = await ctx.prisma.$queryRaw`${getChatQuery(ctx.session.user.id)}`
+      const chats = await ctx.prisma.$queryRawUnsafe(sql)
+     
       return {
         success: true,
         chats
@@ -317,7 +319,7 @@ function createRSAKeys(): string[] {
   ]
 }
 
-function getChatQuery(accountId:number|string) {
+function getChatQuery(accountId: number | string) {
   return `
   -- chat list 
   select
@@ -364,3 +366,49 @@ function getChatQuery(accountId:number|string) {
   where cp.account_id = ${accountId};
 `
 }
+
+const bigsql = `
+-- chat list 
+select
+c.id as chatId,
+
+# receiver user display name 
+(
+  case 
+    when c.is_group = 1 then c.group_name
+    else a.display_name 
+  end
+) as receiverDisplayName,
+  
+# receiver username 
+(
+  case 
+    when c.is_group = 1 then c.group_name
+    else a.username
+  end
+) as receiverUserName,
+
+# receiver user image
+(
+  case 
+    when c.is_group = 1 then c.group_image_id
+    else a.image_id 
+  end
+) as receiverImageId,
+
+# last message text
+m.text as lastMessageText,
+
+# last message date
+m.sent_at as lastMessageDate,
+  
+# last message sender
+m.sender as lastMessageSender
+
+from chats c
+inner join chat_participants cp on c.id = cp.chat_id
+inner join messages m on m.id = c.last_message_id
+left join chat_participants cp2 on cp2.chat_id = c.id and cp2.account_id <> $1  and c.is_group=0
+left join accounts a on a.id = cp2.account_id
+where cp.account_id = $2;
+`
