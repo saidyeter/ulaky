@@ -89,7 +89,26 @@ function ChatList() {
         chats.data?.success &&
         Array.isArray(chats.data.chats) &&
         chats.data.chats.map((val, i) => {
-          return <div key={i}>{val.chat_keys_id}</div>;
+          return (
+            <div
+              key={i}
+              className="flex flex-row items-center justify-center border-b-2 py-4 px-2"
+            >
+              <div className="w-1/4">
+                <img
+                  src={"/api/photo/" + val.receiverImageId}
+                  className="h-12 w-12 rounded-full object-cover"
+                  alt=""
+                />
+              </div>
+              <div className="w-full">
+                <div className="text-lg font-semibold">
+                  {val.receiverDisplayName}
+                </div>
+                <span className="text-gray-500">{val.lastMessageText}</span>
+              </div>
+            </div>
+          );
         })
       ) : (
         <div>

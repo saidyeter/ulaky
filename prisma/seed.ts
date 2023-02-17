@@ -1,11 +1,13 @@
 import { ChatParticipants, Chats, Messages, PrismaClient } from "@prisma/client";
+import { getCollection } from "../src/server/mongo-client";
+import crypto from "crypto";
 
-const acconts = [
+const accounts = [
     {
         id: 1,
         display_name: 'said yeter',
         username: 'said',
-        email: 'said@yeter.com',
+        email: 'saidyeter@hotmail.com',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -17,9 +19,9 @@ const acconts = [
 
     {
         id: 2,
-        display_name: 'seval torun',
-        username: 'seval',
-        email: 'seval@torun.com',
+        display_name: 'eser ozvataf',
+        username: 'eser',
+        email: 'eser@ozvataf.com',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -30,9 +32,9 @@ const acconts = [
     },
     {
         id: 3,
-        display_name: 'fatih kck',
-        username: 'fatih',
-        email: 'fatih@kck.com',
+        display_name: 'tayfun erbilen',
+        username: 'tayfun',
+        email: 'tayfun@erbilen.net',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -43,9 +45,9 @@ const acconts = [
     },
     {
         id: 4,
-        display_name: 'ilker tskn',
-        username: 'ilker',
-        email: 'ilker@tskn.com',
+        display_name: 'scott hanselman',
+        username: 'scott',
+        email: 'scott@hanselman.com',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -56,9 +58,9 @@ const acconts = [
     },
     {
         id: 5,
-        display_name: 'kadir gnr',
-        username: 'kadir',
-        email: 'kadir@gnr.com',
+        display_name: 'j herr',
+        username: 'jherr',
+        email: 'jherr@pobox.com',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -71,7 +73,7 @@ const acconts = [
         id: 6,
         display_name: 'hasan shn',
         username: 'hasan',
-        email: 'hasan@shn.com',
+        email: 'hsnsoft@outlook.com',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -82,9 +84,9 @@ const acconts = [
     },
     {
         id: 7,
-        display_name: 'tayfun trn',
-        username: 'tayfun',
-        email: 'tayfun@trn.com',
+        display_name: 'fatih kadir akin',
+        username: 'fatih',
+        email: 'fatihkadirakin@gmail.com',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -95,9 +97,22 @@ const acconts = [
     },
     {
         id: 8,
-        display_name: 'ali ytr',
-        username: 'ali',
-        email: 'ali@ytr.com',
+        display_name: 'okan davut',
+        username: 'okan',
+        email: 'davut.okan@gmail.com',
+        image_id: '63d842c75f8a8d4d74b86b25',
+        password: '123',
+        salt: 'zasdqwe',
+        verified: true,
+        created_at: new Date(),
+        last_login: new Date(),
+        suspended: false,
+    },
+    {
+        id: 9,
+        display_name: 'adem ilter',
+        username: 'adem',
+        email: 'ademilter@gmail.com',
         image_id: '63d842c75f8a8d4d74b86b25',
         password: '123',
         salt: 'zasdqwe',
@@ -222,7 +237,22 @@ const messages: Messages[] = [
 
 const prisma = new PrismaClient()
 export async function main() {
-    for (let account of acconts) {
+    for (let account of accounts) {
+
+        const emailHash = crypto.createHash('md5').update(account.email).digest("hex")
+        const avatarUrl = `https://www.gravatar.com/avatar/${emailHash}?s=256`
+        const avatar = await (await fetch(avatarUrl)).arrayBuffer()
+        const avatarBase64 = btoa(
+            new Uint8Array(avatar)
+                .reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+
+
+        const photoCollection = await getCollection('photo')
+        const uploadPhoto = await photoCollection.insertOne({
+            data: avatarBase64
+        });
+        account.image_id = uploadPhoto.insertedId.toString()
         await prisma.accounts.create({
             data: account
         })
