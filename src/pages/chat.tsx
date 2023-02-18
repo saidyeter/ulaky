@@ -14,9 +14,6 @@ const Chat: NextPage = () => {
 
   return (
     <ChatIdContext.Provider value={chatIdState}>
-      <Head>
-        <title>Chat</title>
-      </Head>
       <div className="flex flex-row bg-slate-300">
         <div className="w-1/4 border border-white">
           <span>chats</span>

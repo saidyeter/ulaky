@@ -17,8 +17,25 @@ const MyApp: AppType<{ session: Session | null }> = ({
     <SessionProvider session={session}>
       <>
         <Head>
-          <title>Msg App</title>
-          <link rel="icon" href="/favicon.ico" />
+          <title>Ulaky</title>
+          <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+          />
+          <link
+            rel="icon"
+            type="image/png"
+            sizes="32x32"
+            href="/favicon-32x32.png"
+          />
+          <link
+            rel="icon"
+            type="image/png"
+            sizes="16x16"
+            href="/favicon-16x16.png"
+          />
+          <link rel="manifest" href="/site.webmanifest" />
         </Head>
         <main className="min-h-screen bg-[#254B62]">
           <NavHeader />
@@ -50,11 +67,9 @@ function NavHeader() {
         md:py-0
       "
       >
-        <div>
-          <Link href="/">
-            <h3>Messaging App</h3>
-          </Link>
-        </div>
+        <Link href="/">
+          <Image src="/logo/white.svg" alt="logo" width={200} height={100} />
+        </Link>
 
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -104,7 +119,15 @@ function NavHeader() {
                     href="/profile"
                     className="block py-2 hover:scale-125 md:p-4"
                   >
-                    profile
+                    {data.user.image && (
+                      <Image
+                        className="rounded-full"
+                        width={32}
+                        height={32}
+                        src={data.user.image}
+                        alt="log"
+                      />
+                    )}
                   </Link>
                 </li>
                 <li>
@@ -116,19 +139,13 @@ function NavHeader() {
                       })
                     }
                   >
-                    {data.user.name} -&gt;
-                  </button>
-                </li>
-                <li>
-                  {data.user.image && (
                     <Image
-                      className="rounded-full"
-                      width={32}
-                      height={32}
-                      src={data.user.image}
-                      alt="log"
+                      src="/logout.svg"
+                      alt="logo"
+                      width={25}
+                      height={100}
                     />
-                  )}
+                  </button>
                 </li>
               </>
             ) : (
