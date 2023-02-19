@@ -25,37 +25,30 @@ export const messageRouter = createTRPCRouter({
   getChats: protectedProcedure
     .input(z.object({}))
     .query(async ({ input, ctx }) => {
-      const sql = getChatQuery(ctx.session.user.id)
+      const sql = getChatsQuery(ctx.session.user.id)
       // console.log(ctx.session.user.id);
 
       const chats = await ctx.prisma.$queryRawUnsafe(sql)
-     
+
       return {
         success: true,
         chats
       }
     }),
 
-  getChatsByUser: protectedProcedure
+  getMessages: protectedProcedure
     .input(z.object({
-      receiverId: z.number()
+      chatId: z.number(),
     }))
     .query(async ({ input, ctx }) => {
-      console.log(ctx.session.user.id);
-
-      const chats = await ctx.prisma.chats.findMany({
-        // where: {
-        //   account_id: parseInt(ctx.session.user.id)
-        // },
-        // orderBy: {
-        //   last_message: 'desc'
-        // }
-      })
+      const sql = getChatMessagesQuery(input.chatId)
+      const messages = await ctx.prisma.$queryRawUnsafe(sql)
       return {
         success: true,
-        chats
+        messages
       }
     }),
+
   startChat: protectedProcedure
     .input(z.object({
       receiverUsername: z.string().min(4)
@@ -159,6 +152,15 @@ export const messageRouter = createTRPCRouter({
           sent_at: new Date(),
         }
       })
+
+      const updateRes = await db.chats.update({
+        where: {
+          id: chat.id
+        },
+        data: {
+          last_message_id: insertMessage.id
+        }
+      })
       // push notification to msg queue
 
       return {
@@ -251,25 +253,6 @@ export const messageRouter = createTRPCRouter({
       };
     }),
 
-  getMessages: protectedProcedure
-    .input(z.object({
-      chatId: z.number(),
-    }))
-    .query(async ({ input, ctx }) => {
-      const db = ctx.prisma
-      const messages = await db.messages.findMany({
-        where: {
-          chat_id: input.chatId
-        }
-      })
-      return {
-        success: true,
-        messages
-      }
-
-
-
-    }),
 
   // getFirstUnreadMessage: protectedProcedure
   //   .input(z.object({
@@ -319,7 +302,7 @@ function createRSAKeys(): string[] {
   ]
 }
 
-function getChatQuery(accountId: number | string) {
+function getChatsQuery(accountId: number | string) {
   return `
   -- chat list 
   select
@@ -363,52 +346,23 @@ function getChatQuery(accountId: number | string) {
   inner join messages m on m.id = c.last_message_id
   left join chat_participants cp2 on cp2.chat_id = c.id and cp2.account_id <> ${accountId}  and c.is_group=0
   left join accounts a on a.id = cp2.account_id
-  where cp.account_id = ${accountId};
+  where cp.account_id = ${accountId}
+  order by m.sent_at desc;
 `
 }
 
-const bigsql = `
--- chat list 
-select
-c.id as chatId,
-
-# receiver user display name 
-(
-  case 
-    when c.is_group = 1 then c.group_name
-    else a.display_name 
-  end
-) as receiverDisplayName,
-  
-# receiver username 
-(
-  case 
-    when c.is_group = 1 then c.group_name
-    else a.username
-  end
-) as receiverUserName,
-
-# receiver user image
-(
-  case 
-    when c.is_group = 1 then c.group_image_id
-    else a.image_id 
-  end
-) as receiverImageId,
-
-# last message text
-m.text as lastMessageText,
-
-# last message date
-m.sent_at as lastMessageDate,
-  
-# last message sender
-m.sender as lastMessageSender
-
-from chats c
-inner join chat_participants cp on c.id = cp.chat_id
-inner join messages m on m.id = c.last_message_id
-left join chat_participants cp2 on cp2.chat_id = c.id and cp2.account_id <> $1  and c.is_group=0
-left join accounts a on a.id = cp2.account_id
-where cp.account_id = $2;
+function getChatMessagesQuery(chatId: number) {
+  return `
+-- chat messages 
+select 
+m.text,
+m.sender,
+a.username,
+a.display_name,
+a.image_id,
+m.sent_at
+from messages m 
+inner join accounts a on a.id = m.sender
+where  m.chat_id = ${chatId};
 `
+}
