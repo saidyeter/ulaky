@@ -16,6 +16,15 @@ This is a [Next.js](https://nextjs.org/) app.
 - [Node.js](https://nodejs.org/en/)
 - [Docker](https://www.docker.com/)
 
+## Instructions
+In the root folder of project
+- Use `yarn` to install dependencies
+- Use `docker compose up` to run MongoDB and MySQL
+- Copy `.env.example` file to `.env` 
+- Use `npx prisma db push` to create db tables 
+- Use `npx prisma db seed` to create sample data
+- Use `yarn dev` to run locally 
+
 ## License
 
 MIT License
