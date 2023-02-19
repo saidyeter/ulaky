@@ -1,13 +1,13 @@
 import { Accounts } from "@prisma/client";
 import { type NextPage } from "next";
-import Head from "next/head";
-import { createContext, useState, useContext, useMemo } from "react";
+import { createContext, useState, useContext } from "react";
 import { api } from "../utils/api";
+import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 const ChatIdContext = createContext(
   {} as [number, React.Dispatch<React.SetStateAction<number>>]
 );
-//  const [chatId, setChatId]  = useContext(ChatContext);
 
 const Chat: NextPage = () => {
   const chatIdState = useState(0);
@@ -16,11 +16,9 @@ const Chat: NextPage = () => {
     <ChatIdContext.Provider value={chatIdState}>
       <div className="flex flex-row bg-slate-300">
         <div className="w-1/4 border border-white">
-          <span>chats</span>
           <ChatList />
         </div>
         <div className="w-3/4 border border-white">
-          <span>mesagebox</span>
           <ChatBox />
         </div>
       </div>
@@ -92,9 +90,11 @@ function ChatList() {
               className="flex flex-row items-center justify-center border-b-2 py-4 px-2"
             >
               <div className="w-1/4">
-                <img
+                <Image
                   src={"/api/photo/" + val.receiverImageId}
-                  className="h-12 w-12 rounded-full object-cover"
+                  className="rounded-full object-cover"
+                  width={48}
+                  height={48}
                   alt=""
                 />
               </div>
@@ -103,6 +103,22 @@ function ChatList() {
                   {val.receiverDisplayName}
                 </div>
                 <span className="text-gray-500">{val.lastMessageText}</span>
+              </div>
+
+              <div className="">
+                <button
+                  className="block py-2 hover:scale-125 md:p-4"
+                  onClick={() => {
+                    setChatId(val.chatId);
+                  }}
+                >
+                  <Image
+                    src="/arrow-circle-right.svg"
+                    alt="logo"
+                    width={80}
+                    height={100}
+                  />
+                </button>
               </div>
             </div>
           );
@@ -129,6 +145,9 @@ function ChatList() {
 }
 
 function ChatBox() {
+  const { data } = useSession();
+
+  const sendMessageMutation = api.message.sendMessage.useMutation();
   const [chatId, setChatId] = useContext(ChatIdContext);
   const [message, setMessage] = useState("");
   const chats = api.message.getMessages.useQuery(
@@ -139,21 +158,65 @@ function ChatBox() {
       enabled: chatId !== 0,
     }
   );
-  function sendMessage() {}
+  function sendMessage() {
+    sendMessageMutation.mutate(
+      { text: message, chatId },
+      {
+        onSuccess() {
+          setMessage("");
+          chats.refetch();
+        },
+      }
+    );
+  }
   if (chatId === 0) {
     return <></>;
   }
 
   return (
-    <>
-      <div>messages</div>
-      <div>
-        {chats.data?.messages.map((val, i) => {
-          return <div key={i}>{val.chat_id}</div>;
-        })}
+    <div className="flex h-full w-full flex-col items-center justify-between p-4">
+      <div className="w-full p-4">
+        {chats.data?.success &&
+          Array.isArray(chats.data.messages) &&
+          chats.data?.messages.map((val, i, arr) => {
+            return (
+              <div key={i} className="w-full">
+                {data?.user.id === val.sender.toString() ? (
+                  <div className="flex w-full items-end justify-end">
+                    <span>{val.text}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-fit border bg-red-200">
+                      <div className="flex gap-1">
+                        <Image
+                          src={"/api/photo/" + val.image_id}
+                          className="rounded-full object-cover"
+                          width={24}
+                          height={24}
+                          alt=""
+                        />
+                        <span className="font-semibold">
+                          {val.display_name} &nbsp;
+                        </span>
+                        <span className="italic">{val.username} &nbsp;</span>
+                      </div>
+                      <span>{val.text}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
       </div>
-      <input onChange={(e) => setMessage(e.target.value)} />
-      <button onClick={sendMessage}>send message</button>
-    </>
+      <div className="flex w-full gap-4 p-4">
+        <input
+          className="w-full"
+          onChange={(e) => setMessage(e.target.value)}
+          value={message}
+        />
+        <button onClick={sendMessage}>send message</button>
+      </div>
+    </div>
   );
 }

@@ -20,9 +20,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         data: string
     }>({ "_id": new ObjectId(photoId) })
 
-    if (!photo) {
-        return res.status(404)
+    if (!photo || !photo?.data) {
+        return res.status(404).json({ err: 'photo couldnt find' })
     }
-
+    
     return res.send(Buffer.from(photo.data, 'base64'));
 }
