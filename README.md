@@ -25,6 +25,24 @@ In the root folder of project
 - Use `npx prisma db seed` to create sample data
 - Use `yarn dev` to run locally 
 
+## To do
+Tasks and the approximate required time
+
+|Task | Time|
+|-----|-----|
+|implement messaging queue |5|
+|chat info |1|
+|message seen info |1|
+|hash user password  |1|
+|message encrypt |5|
+|message decrypt |3|
+|create group |3|
+|try catch for prisma ops  |3|
+|localstorage to store encrypted message |3|
+|chatbox ui design |3|
+|chatlist ui design |3|
+|implement background push notification |3|
+
 ## License
 
 MIT License
