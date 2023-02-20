@@ -31,8 +31,10 @@ export default Chat;
 function ChatList() {
   const [_, setChatId] = useContext(ChatIdContext);
 
-  const [receiver, setReceiver] = useState(0);
   const [searching, setSearching] = useState(false);
+
+  const startChatMutation = api.message.startChat.useMutation();
+
   const chats = api.message.getChats.useQuery(
     {},
     {
@@ -47,7 +49,7 @@ function ChatList() {
       searchKey: searchKey,
     },
     {
-      enabled: searching,
+      enabled: searching && searchKey.length >2,
     }
   );
 
@@ -63,10 +65,17 @@ function ChatList() {
     console.log("start new chat");
   }
 
-  function startChat(receiverId: number) {
-    // console.log("startChat with " + receiverId);
-    setReceiver(receiverId);
-    //fetch message history
+  function startChat(username: string) {
+    startChatMutation.mutate({
+      receiverUsername: username,
+    },{
+      onSuccess(data, variables, context) {
+        if (data && data.success) {
+          setSearchKey('')
+          setChatId(data.chatId ?? 0)
+        }
+      },
+    });
   }
   return (
     <>
@@ -74,6 +83,7 @@ function ChatList() {
         <input
           className="w-full p-2"
           onChange={(e) => setSearchKey(e.target.value)}
+          value={searchKey}
         />
         <button disabled={searchKey.length < 3} onClick={searchContact}>
           search contact
@@ -133,7 +143,7 @@ function ChatList() {
               >
                 <span className="text-lg">{val.display_name}</span>
                 <span className="text-sm">@{val.username}</span>
-                <button onClick={() => startChat(val.id)}>chat</button>
+                <button onClick={() => startChat(val.username)}>chat</button>
               </div>
             );
           })}

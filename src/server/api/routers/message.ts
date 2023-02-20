@@ -94,33 +94,30 @@ export const messageRouter = createTRPCRouter({
         }
       }
 
-      // const insertSenderChat = db.chats.create({
-      //   data: {
-      //     // sender_id: parseInt(ctx.session.user.id),
-      //     chat_keys_id: insertMongoResult.insertedId.toString(),
-      //     // last_message: new Date(),
-      //   }
-      // })
+      
+      const insertChat = await db.chats.create({
+        data: {
+          last_message_id:-1,
+          chat_keys_id: insertMongoResult.insertedId.toString(),
+        }
+      })
 
-      // const insertReceiverChat = db.chats.create({
-      //   data: {
-      //     // account_id: receiverUser.id,
-      //     chat_keys_id: insertMongoResult.insertedId.toString(),
-      //     last_message: new Date(),
-      //   }
-      // })
+      const insertChatPartipiciants= await db.chatParticipants.createMany({
+        data:[
+          {
+            account_id: receiverUser.id,
+            chat_id : insertChat.id
+          },
+          {
+            account_id: parseInt(ctx.session.user.id),
+            chat_id : insertChat.id
+          },
+        ]
+      })
 
-      // const promises = await Promise.allSettled([insertSenderChat, insertReceiverChat])
-      // if (promises[0].status == 'fulfilled' && promises[1].status == 'fulfilled') {
-      //   return {
-      //     success: true,
-      //     chatId: promises[0].value.id
-      //   }
-      // }
-      console.log('couldnt insert chat to db')
       return {
-        success: false,
-        msg: "error on chat creation"
+        success: true,
+        chatId: insertChat.id
       }
     }),
   sendMessage: protectedProcedure
