@@ -3,6 +3,10 @@ import { z } from "zod";
 import { getCollection } from "../../mongo-client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { generateKeyPair } from 'crypto'
+import { createClient } from '@supabase/supabase-js'
+import { serverEnv } from "../../../env/schema.mjs";
+const supabase = createClient(serverEnv.SUPABASE_URL ?? '', serverEnv.SUPABASE_KEY ?? '')
+
 
 export const messageRouter = createTRPCRouter({
   searchUser: protectedProcedure
@@ -94,23 +98,23 @@ export const messageRouter = createTRPCRouter({
         }
       }
 
-      
+
       const insertChat = await db.chats.create({
         data: {
-          last_message_id:-1,
+          last_message_id: -1,
           chat_keys_id: insertMongoResult.insertedId.toString(),
         }
       })
 
-      const insertChatPartipiciants= await db.chatParticipants.createMany({
-        data:[
+      const insertChatPartipiciants = await db.chatParticipants.createMany({
+        data: [
           {
             account_id: receiverUser.id,
-            chat_id : insertChat.id
+            chat_id: insertChat.id
           },
           {
             account_id: parseInt(ctx.session.user.id),
-            chat_id : insertChat.id
+            chat_id: insertChat.id
           },
         ]
       })
@@ -159,6 +163,27 @@ export const messageRouter = createTRPCRouter({
         }
       })
       // push notification to msg queue
+      const participants = await db.chatParticipants
+        .findMany({
+          where: {
+            chat_id: chat.id
+          },
+          select: {
+            account_id: true
+          }
+        })
+      participants.forEach(async p => {
+        p.account_id !== parseInt(ctx.session.user.id) &&
+          await supabase
+            .from('notification')
+            .insert([
+              {
+                account_id: p.account_id,
+                chat_id: chat.id
+              }
+            ])
+      })
+
 
       return {
         success: true

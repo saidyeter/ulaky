@@ -1,16 +1,64 @@
 import { Accounts } from "@prisma/client";
 import { type NextPage } from "next";
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useContext, useEffect } from "react";
 import { api } from "../utils/api";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { createClient, RealtimeChannel } from "@supabase/supabase-js";
+import { clientEnv, serverEnv } from "../env/schema.mjs";
 
 const ChatIdContext = createContext(
   {} as [number, React.Dispatch<React.SetStateAction<number>>]
 );
+const supabase = createClient(
+  clientEnv.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  clientEnv.NEXT_PUBLIC_SUPABASE_KEY ?? "",
+  {
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
+  }
+);
+let channel: RealtimeChannel | undefined = undefined;
 
 const Chat: NextPage = () => {
+  console.log("conn", channel?.state);
   const chatIdState = useState(0);
+  const { data } = useSession();
+
+  if (!channel) {
+    channel = supabase
+      .channel("*")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notification",
+          filter: "account_id=eq." + data?.user.id,
+        },
+        (payload) => {
+          console.log(payload);
+        }
+      )
+  }
+
+
+  useEffect(() => {
+    console.log('channel', channel?.state);
+    
+    if (channel && channel.state === 'closed'){
+      channel = channel.subscribe();
+    }
+    return () => {
+      if (channel && channel.state === 'joined') {
+        supabase.removeChannel(channel);
+        console.log("removed channel");
+      }
+    };
+  }, [channel]);
 
   return (
     <ChatIdContext.Provider value={chatIdState}>
@@ -49,7 +97,7 @@ function ChatList() {
       searchKey: searchKey,
     },
     {
-      enabled: searching && searchKey.length >2,
+      enabled: searching && searchKey.length > 2,
     }
   );
 
@@ -66,16 +114,19 @@ function ChatList() {
   }
 
   function startChat(username: string) {
-    startChatMutation.mutate({
-      receiverUsername: username,
-    },{
-      onSuccess(data, variables, context) {
-        if (data && data.success) {
-          setSearchKey('')
-          setChatId(data.chatId ?? 0)
-        }
+    startChatMutation.mutate(
+      {
+        receiverUsername: username,
       },
-    });
+      {
+        onSuccess(data, variables, context) {
+          if (data && data.success) {
+            setSearchKey("");
+            setChatId(data.chatId ?? 0);
+          }
+        },
+      }
+    );
   }
   return (
     <>
