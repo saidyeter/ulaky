@@ -143,7 +143,7 @@ function NavHeader() {
                       src="/logout.svg"
                       alt="logo"
                       width={25}
-                      height={100}
+                      height={25}
                     />
                   </button>
                 </li>
